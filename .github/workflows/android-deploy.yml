@@ -1,0 +1,118 @@
+name: Android Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+    tags:
+      - 'android-v*'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Release track'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - beta
+          - production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    env:
+      SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd android
+          bundle install
+      
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release-keystore.jks
+      
+      - name: Create keystore.properties
+        run: |
+          echo "storeFile=release-keystore.jks" > android/keystore.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/keystore.properties
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+      
+      - name: Run tests
+        run: |
+          cd android
+          bundle exec fastlane test
+      
+      - name: Build release AAB
+        run: |
+          cd android
+          bundle exec fastlane build_release
+      
+      - name: Deploy to Internal Testing
+        if: github.event.inputs.track == 'internal' || contains(github.ref, 'refs/heads/main')
+        run: |
+          cd android
+          bundle exec fastlane internal
+      
+      - name: Deploy to Beta
+        if: github.event.inputs.track == 'beta'
+        run: |
+          cd android
+          bundle exec fastlane beta
+      
+      - name: Deploy to Production
+        if: github.event.inputs.track == 'production' || startsWith(github.ref, 'refs/tags/android-v')
+        run: |
+          cd android
+          bundle exec fastlane production
+      
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-build
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/mapping/release/mapping.txt
+          retention-days: 30
+      
+      - name: Notify on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'Android deployment failed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

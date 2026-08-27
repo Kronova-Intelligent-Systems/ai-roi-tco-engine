@@ -1,0 +1,105 @@
+name: iOS Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+    tags:
+      - 'ios-v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta
+          - production
+
+jobs:
+  build-and-deploy:
+    runs-on: macos-latest
+    
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+      TEAM_ID: ${{ secrets.TEAM_ID }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      FASTLANE_USER: ${{ secrets.APPLE_ID }}
+      FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+      FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd ios
+          bundle install
+          pod install
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v3
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Setup code signing
+        run: |
+          cd ios
+          bundle exec fastlane certificates
+      
+      - name: Run tests
+        run: |
+          cd ios
+          bundle exec fastlane test
+      
+      - name: Deploy to TestFlight (Beta)
+        if: github.event.inputs.environment == 'beta' || contains(github.ref, 'refs/heads/main')
+        run: |
+          cd ios
+          bundle exec fastlane beta
+      
+      - name: Deploy to App Store (Production)
+        if: github.event.inputs.environment == 'production' || startsWith(github.ref, 'refs/tags/ios-v')
+        run: |
+          cd ios
+          bundle exec fastlane release
+      
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: |
+            ios/build/*.ipa
+            ios/build/*.dSYM.zip
+          retention-days: 30
+      
+      - name: Notify on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'iOS deployment failed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

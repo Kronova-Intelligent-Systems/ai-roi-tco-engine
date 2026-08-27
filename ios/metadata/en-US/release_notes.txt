@@ -1,0 +1,15 @@
+What's New in Version 1.0.0:
+
+• Initial release of Kronova ROI Calculator
+• Comprehensive AI transformation ROI analysis
+• Industry-specific benchmarks for 6+ sectors
+• Multi-factor assessment tool
+• Risk analysis and mitigation insights
+• Offline calculation support
+• PDF export functionality
+• Subscription plan comparisons
+• Interactive data visualization
+• Dark mode support
+• iPad optimization
+
+We're excited to help you calculate your AI transformation ROI! Questions or feedback? Contact us at help@kronova.io

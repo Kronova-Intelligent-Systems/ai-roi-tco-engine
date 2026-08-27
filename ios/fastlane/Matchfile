@@ -1,0 +1,10 @@
+# Matchfile for code signing
+
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+
+type("appstore")
+
+app_identifier(["com.kronova.roicalculator"])
+username(ENV["APPLE_ID"])
+team_id(ENV["TEAM_ID"])

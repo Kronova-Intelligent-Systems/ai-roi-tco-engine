@@ -1,0 +1,112 @@
+-- Create roi_calculations table to store calculation history
+CREATE TABLE IF NOT EXISTS roi_calculations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES roi_users(id) ON DELETE CASCADE,
+    
+    -- Organization Profile
+    employees INTEGER NOT NULL,
+    avg_salary DECIMAL(12, 2) NOT NULL,
+    industry VARCHAR(100) NOT NULL,
+    company_size VARCHAR(50) NOT NULL,
+    
+    -- Current AI Usage
+    current_monthly_ai_spend DECIMAL(12, 2) DEFAULT 0,
+    current_ai_tools_count INTEGER DEFAULT 0,
+    current_automation_level VARCHAR(50) DEFAULT 'none',
+    
+    -- AI Implementation Details
+    processes_to_automate INTEGER NOT NULL,
+    avg_process_time_hours DECIMAL(10, 2) NOT NULL,
+    process_frequency_per_month INTEGER NOT NULL,
+    error_rate_percentage DECIMAL(5, 2) DEFAULT 0,
+    
+    -- Cost Factors
+    data_preparation_costs DECIMAL(12, 2) DEFAULT 0,
+    training_costs DECIMAL(12, 2) DEFAULT 0,
+    maintenance_costs DECIMAL(12, 2) DEFAULT 0,
+    
+    -- Quality Metrics
+    current_customer_satisfaction DECIMAL(5, 2) DEFAULT 0,
+    target_customer_satisfaction DECIMAL(5, 2) DEFAULT 0,
+    compliance_requirements BOOLEAN DEFAULT false,
+    
+    -- Strategic Factors
+    time_to_market_days INTEGER DEFAULT 0,
+    innovation_priority VARCHAR(50) DEFAULT 'medium',
+    competitive_pressure VARCHAR(50) DEFAULT 'medium',
+    
+    -- Risk Assessment
+    data_quality_score DECIMAL(5, 2) DEFAULT 0,
+    team_ai_readiness VARCHAR(50) DEFAULT 'medium',
+    integration_complexity VARCHAR(50) DEFAULT 'medium',
+    
+    -- Selected Plan
+    selected_plan_id VARCHAR(50) NOT NULL,
+    
+    -- Calculation Results (stored as JSONB for flexibility)
+    results JSONB NOT NULL,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create roi_calc_comparable_plans table for AI SaaS subscription plans
+CREATE TABLE IF NOT EXISTS roi_calc_comparable_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    provider VARCHAR(100) NOT NULL,
+    plan_id VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    
+    -- Pricing
+    monthly_price DECIMAL(10, 2),
+    yearly_price DECIMAL(10, 2),
+    monthly_standard_price DECIMAL(10, 2), -- For promotional pricing
+    yearly_standard_price DECIMAL(10, 2),  -- For promotional pricing
+    custom_pricing BOOLEAN DEFAULT false,
+    pay_as_you_go BOOLEAN DEFAULT false,
+    is_introductory BOOLEAN DEFAULT false,
+    
+    -- Features (stored as array)
+    features TEXT[] NOT NULL,
+    
+    -- Limits (stored as JSONB for flexibility)
+    limits JSONB NOT NULL,
+    
+    -- Metadata
+    recommended BOOLEAN DEFAULT false,
+    is_resend_it_plan BOOLEAN DEFAULT false,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better query performance (Idempotent)
+CREATE INDEX IF NOT EXISTS idx_roi_calculations_user_id ON roi_calculations(user_id);
+CREATE INDEX IF NOT EXISTS idx_roi_calculations_created_at ON roi_calculations(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_roi_calculations_industry ON roi_calculations(industry);
+CREATE INDEX IF NOT EXISTS idx_roi_calc_comparable_plans_provider ON roi_calc_comparable_plans(provider);
+CREATE INDEX IF NOT EXISTS idx_roi_calc_comparable_plans_active ON roi_calc_comparable_plans(active);
+CREATE INDEX IF NOT EXISTS idx_roi_calc_comparable_plans_is_resend_it ON roi_calc_comparable_plans(is_resend_it_plan);
+CREATE INDEX IF NOT EXISTS idx_industry_benchmarks_industry ON industry_benchmarks(industry);
+
+-- Add updated_at triggers safely by dropping them first
+DROP TRIGGER IF EXISTS update_roi_users_updated_at ON roi_users;
+CREATE TRIGGER update_roi_users_updated_at BEFORE UPDATE ON roi_users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_roi_calculations_updated_at ON roi_calculations;
+CREATE TRIGGER update_roi_calculations_updated_at BEFORE UPDATE ON roi_calculations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_roi_calc_comparable_plans_updated_at ON roi_calc_comparable_plans;
+CREATE TRIGGER update_roi_calc_comparable_plans_updated_at BEFORE UPDATE ON roi_calc_comparable_plans
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_industry_benchmarks_updated_at ON industry_benchmarks;
+CREATE TRIGGER update_industry_benchmarks_updated_at BEFORE UPDATE ON industry_benchmarks
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+COMMENT ON TABLE roi_calculations IS 'Historical record of all ROI calculations performed';
+COMMENT ON TABLE roi_calc_comparable_plans IS 'AI SaaS subscription plans for comparison in ROI calculations';

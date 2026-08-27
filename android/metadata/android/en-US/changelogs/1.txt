@@ -1,0 +1,12 @@
+Initial release of Kronova ROI Calculator
+
+• Comprehensive AI transformation ROI analysis
+• Industry-specific benchmarks for 6+ sectors
+• Multi-factor assessment tool
+• Risk analysis and mitigation insights
+• Offline calculation support
+• PDF export functionality
+• Subscription plan comparisons
+• Interactive data visualization
+• Material Design 3 UI
+• Tablet optimization

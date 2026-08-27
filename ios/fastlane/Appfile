@@ -1,0 +1,9 @@
+# Appfile for iOS deployment configuration
+
+app_identifier("com.kronova.roicalculator")
+apple_id(ENV["APPLE_ID"])
+itc_team_id(ENV["ITC_TEAM_ID"])
+team_id(ENV["TEAM_ID"])
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile

@@ -1,0 +1,135 @@
+# Fastfile for iOS App Store deployment
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Increment build number
+    increment_build_number(xcodeproj: "KronovaROI.xcodeproj")
+    
+    # Build the app
+    build_app(
+      scheme: "KronovaROI",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "KronovaROI.ipa"
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      distribute_external: false,
+      notify_external_testers: false,
+      changelog: "Bug fixes and performance improvements"
+    )
+    
+    # Send notification
+    slack(
+      message: "Successfully uploaded new iOS build to TestFlight!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Deploy a new version to the App Store"
+  lane :release do
+    # Ensure clean working directory
+    ensure_git_status_clean
+    
+    # Increment version
+    increment_version_number(
+      bump_type: "patch",
+      xcodeproj: "KronovaROI.xcodeproj"
+    )
+    
+    # Increment build number
+    increment_build_number(xcodeproj: "KronovaROI.xcodeproj")
+    
+    # Build the app
+    build_app(
+      scheme: "KronovaROI",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "KronovaROI.ipa"
+    )
+    
+    # Upload to App Store
+    upload_to_app_store(
+      force: true,
+      reject_if_possible: true,
+      skip_metadata: false,
+      skip_screenshots: false,
+      submit_for_review: true,
+      automatic_release: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false
+      }
+    )
+    
+    # Commit version bump
+    commit_version_bump(
+      message: "Version Bump to #{lane_context[SharedValues::VERSION_NUMBER]}",
+      xcodeproj: "KronovaROI.xcodeproj"
+    )
+    
+    # Create git tag
+    add_git_tag(
+      tag: "ios-v#{lane_context[SharedValues::VERSION_NUMBER]}"
+    )
+    
+    # Push to remote
+    push_to_git_remote
+    
+    # Send notification
+    slack(
+      message: "Successfully released iOS v#{lane_context[SharedValues::VERSION_NUMBER]} to App Store!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      scheme: "KronovaROI",
+      devices: ["iPhone 15", "iPhone 15 Pro", "iPad Pro (12.9-inch)"]
+    )
+  end
+
+  desc "Take screenshots"
+  lane :screenshots do
+    capture_screenshots(
+      scheme: "KronovaROIUITests",
+      devices: [
+        "iPhone 15 Pro Max",
+        "iPhone 15",
+        "iPhone SE (3rd generation)",
+        "iPad Pro (12.9-inch) (6th generation)"
+      ]
+    )
+    
+    frame_screenshots(
+      white: true,
+      path: "./fastlane/screenshots"
+    )
+  end
+
+  desc "Download certificates and provisioning profiles"
+  lane :certificates do
+    match(
+      type: "appstore",
+      readonly: true
+    )
+  end
+
+  error do |lane, exception|
+    slack(
+      message: "iOS lane '#{lane}' failed with error: #{exception.message}",
+      success: false,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+end

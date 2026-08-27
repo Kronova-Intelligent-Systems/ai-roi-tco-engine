@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "Cargo.toml",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "target/release"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/kronova-roi-api"
+    }
+  ],
+  "env": {
+    "RUST_VERSION": "1.75"
+  }
+}

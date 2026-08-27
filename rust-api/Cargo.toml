@@ -1,0 +1,69 @@
+[package]
+name = "kronova-roi-api"
+version = "0.3.0"
+edition = "2021"
+
+[dependencies]
+# rspc 0.4 - Type-safe RPC framework (new procedure-based architecture)
+rspc = { version = "0.4.1", features = ["typescript"] }
+rspc-axum = { version = "0.3.0", features = ["ws"] }
+specta = { version = "=2.0.0-rc.22", features = ["derive"] }
+specta-typescript = "0.0.9"
+
+# Async runtime
+tokio = { version = "1.43", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Database & ORM
+# Change this line in Cargo.toml
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "rust_decimal"] }
+uuid = { version = "1.10", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# API & Web (pinned to 0.7 for rspc-axum compatibility)
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+hyper = "1.0"
+
+# Error handling & validation
+anyhow = "1.0"
+thiserror = "2.0"
+validator = { version = "0.20", features = ["derive"] }
+
+# Tracing & logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Environment & config
+dotenv = "0.15"
+
+# Security & auth
+jsonwebtoken = "9.3"
+bcrypt = "0.16"
+argon2 = "0.5"
+
+# HTTP client for live pricing fetches
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Decimal precision for financial calculations
+rust_decimal = { version = "1.36", features = ["serde-with-str"] }
+
+# Scheduled tasks (hourly pricing refresh cron)
+tokio-cron-scheduler = { version = "0.13", features = ["signal"] }
+
+# Utilities
+futures = "0.3"
+
+[dev-dependencies]
+rstest = "0.23"
+mockall = "0.13"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,175 @@
+# Fastfile for Android Play Store deployment
+
+default_platform(:android)
+
+platform :android do
+  desc "Build debug APK"
+  lane :debug do
+    gradle(
+      task: "assembleDebug",
+      project_dir: "android/"
+    )
+  end
+
+  desc "Build release AAB"
+  lane :build_release do
+    gradle(
+      task: "bundleRelease",
+      project_dir: "android/",
+      print_command: false
+    )
+  end
+
+  desc "Deploy to internal testing track"
+  lane :internal do
+    # Build release bundle
+    gradle(
+      task: "bundleRelease",
+      project_dir: "android/"
+    )
+
+    # Upload to Play Console
+    upload_to_play_store(
+      track: 'internal',
+      aab: 'android/app/build/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+
+    slack(
+      message: "Successfully deployed Android build to internal testing!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Deploy to beta (closed testing)"
+  lane :beta do
+    # Increment version code
+    increment_version_code(
+      gradle_file_path: "android/app/build.gradle"
+    )
+
+    # Build release bundle
+    gradle(
+      task: "bundleRelease",
+      project_dir: "android/"
+    )
+
+    # Upload to Play Console
+    upload_to_play_store(
+      track: 'beta',
+      aab: 'android/app/build/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      rollout: '1.0'
+    )
+
+    # Commit version bump
+    git_commit(
+      path: "android/app/build.gradle",
+      message: "Bump Android version code"
+    )
+
+    slack(
+      message: "Successfully deployed Android build to beta testing!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Promote beta to production"
+  lane :promote_to_production do
+    upload_to_play_store(
+      track: 'beta',
+      track_promote_to: 'production',
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      rollout: '0.1'  # 10% rollout
+    )
+
+    slack(
+      message: "Successfully promoted Android build to production with 10% rollout!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Deploy directly to production (use with caution)"
+  lane :production do
+    # Increment version code
+    increment_version_code(
+      gradle_file_path: "android/app/build.gradle"
+    )
+
+    # Build release bundle
+    gradle(
+      task: "bundleRelease",
+      project_dir: "android/"
+    )
+
+    # Upload to Play Console
+    upload_to_play_store(
+      track: 'production',
+      aab: 'android/app/build/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      rollout: '0.1',  # Start with 10% rollout
+      release_status: 'draft'  # Submit as draft for manual review
+    )
+
+    # Commit version bump
+    git_commit(
+      path: "android/app/build.gradle",
+      message: "Bump Android version for production release"
+    )
+
+    # Create git tag
+    add_git_tag(
+      tag: "android-v#{get_version_name(gradle_file_path: 'android/app/build.gradle')}"
+    )
+
+    push_to_git_remote
+
+    slack(
+      message: "Successfully deployed Android build to production (draft)!",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+
+  desc "Run tests"
+  lane :test do
+    gradle(
+      task: "test",
+      project_dir: "android/"
+    )
+  end
+
+  desc "Run instrumented tests"
+  lane :instrumented_test do
+    gradle(
+      task: "connectedAndroidTest",
+      project_dir: "android/"
+    )
+  end
+
+  desc "Capture screenshots"
+  lane :screenshots do
+    screengrab
+  end
+
+  error do |lane, exception|
+    slack(
+      message: "Android lane '#{lane}' failed: #{exception.message}",
+      success: false,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+end

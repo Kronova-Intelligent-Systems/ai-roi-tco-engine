@@ -1,0 +1,31 @@
+Thank you for reviewing Kronova ROI Calculator!
+
+TESTING INSTRUCTIONS:
+
+1. Launch the app
+2. Scroll to the ROI Calculator section
+3. Enter organization details (pre-filled demo data available)
+4. Navigate through the 4 tabs: Organization, Operations, Infrastructure, Strategy
+5. View real-time ROI calculations on the right panel
+6. Try different subscription plans to see cost comparisons
+7. Request a detailed assessment (email form)
+
+DEMO CREDENTIALS:
+Email: reviewer@kronova.io
+Password: demo123456
+
+KEY FEATURES TO TEST:
+• ROI calculator with live updates
+• Industry benchmark comparisons
+• Offline functionality (enable Airplane Mode)
+• Dark mode support
+• iPad landscape orientation
+• Export functionality
+
+NO IN-APP PURCHASES:
+This is a free calculator tool. No purchases required for testing.
+
+CONTACT:
+For any questions during review: appstore@kronova.io
+
+Thank you!
