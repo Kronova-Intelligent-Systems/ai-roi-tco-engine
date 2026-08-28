@@ -74,7 +74,7 @@ Legacy cloud infrastructure exposes autonomous agents to public mempool extracti
 
 ### 1. Prerequisites
 
-* [Node.js](https://www.google.com/search?q=https://nodejs.org/) (v18.18.0 or higher)
+* [Node.js](https://www.google.com/search?q=https://nodejs.org/) (v18.18.0 or higher - built with v24.20 on Ubuntu 24) 
 * [Rust & Cargo](https://www.google.com/search?q=https://rustup.rs/) (v1.75.0 or higher)
 * A [Supabase](https://www.google.com/search?q=https://supabase.com/) project or local PostgreSQL instance
 
@@ -132,9 +132,9 @@ The RPC service will boot on `http://127.0.0.1:3003`.
 
 ---
 
-### 4. Frontend Configuration (`apps/web`)
+### 4. Frontend Configuration
 
-Create a `.env.local` file in the root of the frontend directory:
+Create a `.env.local` file in the root of the project:
 
 ```env
 NEXT_PUBLIC_RUST_API_URL=[http://127.0.0.1:3003](http://127.0.0.1:3003)
@@ -143,16 +143,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_your_key_here
 
 ```
 
-Install dependencies and start the development server:
+Clone or fork and then clone to local machine, install dependencies and start the development server:
 
 ```bash
-cd apps/web
+git clone git@github.com:kronova-intelligent-systems/ai-roi-tco.git
 npm install
 npm run dev
 
 ```
 
-Visit `http://localhost:3000` in your browser.
+Visit `http://localhost:3002` in your browser.
 
 ---
 
