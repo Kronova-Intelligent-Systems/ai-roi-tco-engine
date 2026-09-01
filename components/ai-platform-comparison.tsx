@@ -1,5 +1,6 @@
 "use client";
 
+import { SITSpotTicker } from "@/components/sit-spot-ticker"
 import { useEffect, useMemo, useState } from "react"
 import {
   CheckCircle2,
@@ -28,6 +29,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   infrastructure: "Infrastructure",
   open_source: "Open Source",
 }
+
+// Constant benchmark for SIT conversion (1 SIT = $0.00142 USD)
+const SIT_SPOT_PRICE = 0.00142
 
 function getScoreBarColor(score: number): string {
   if (score >= 90) return "bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)]"
@@ -92,13 +96,15 @@ function ScoreBar({ score, className = "" }: { score: number; className?: string
 }
 
 // ---------------------------------------------------------------------------
-// Kronova pinned row
+// Kronova pinned row (UPDATED WITH 11 COLUMNS)
 // ---------------------------------------------------------------------------
-function KronovaRow({ employees, currentAnnualCost }: { employees: number, currentAnnualCost: number }) {
-  // Compute Kronova Reference Base line dynamically
-  const estimatedAnnualCost = employees * 1800; // $150/mo blended rate
-  const estimatedAnnualSavings = currentAnnualCost > 0 ? (currentAnnualCost * 0.4) : 0;
-  const estimatedPaybackMonths = estimatedAnnualSavings > 0 ? (estimatedAnnualCost / (estimatedAnnualSavings / 12)) : 0;
+function KronovaRow({ employees, currentAnnualCost }: { employees: number; currentAnnualCost: number }) {
+  const estimatedAnnualCost = employees * 1800
+  const estimatedAnnualSavings = currentAnnualCost > 0 ? currentAnnualCost * 0.4 : 0
+  const estimatedPaybackMonths = estimatedAnnualSavings > 0 ? estimatedAnnualCost / (estimatedAnnualSavings / 12) : 0
+  
+  // Calculate SIT volume equivalent
+  const estimatedSITs = Math.round(estimatedAnnualCost / SIT_SPOT_PRICE)
 
   return (
     <tr className="bg-[#0047AB]/10 border-b border-[#00CED1]/30">
@@ -116,6 +122,12 @@ function KronovaRow({ employees, currentAnnualCost }: { employees: number, curre
       <td className="px-4 py-4 text-sm font-semibold text-slate-200">
         {estimatedAnnualCost > 0 ? `$${estimatedAnnualCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
       </td>
+      
+      {/* NEW: SIT Column */}
+      <td className="px-4 py-4 text-sm font-mono font-bold text-[#00CED1]">
+        {estimatedSITs > 0 ? `${estimatedSITs.toLocaleString()} SIT` : "—"}
+      </td>
+
       <td className="px-4 py-4 text-sm font-mono font-bold text-green-400">
         {estimatedAnnualSavings > 0 ? `$${estimatedAnnualSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
       </td>
@@ -144,11 +156,14 @@ function KronovaRow({ employees, currentAnnualCost }: { employees: number, curre
 }
 
 // ---------------------------------------------------------------------------
-// Platform row
+// Platform row (UPDATED WITH 11 COLUMNS)
 // ---------------------------------------------------------------------------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function PlatformRow({ platform, expanded, onToggle }: { platform: any; expanded: boolean; onToggle: () => void }) {
   const deltaPositive = platform.vsKronova >= 0
+  
+  // Calculate SIT volume equivalent
+  const platformSITs = platform.cost > 0 ? Math.round(platform.cost / SIT_SPOT_PRICE) : 0
 
   return (
     <>
@@ -167,6 +182,12 @@ function PlatformRow({ platform, expanded, onToggle }: { platform: any; expanded
         <td className="px-4 py-3 text-sm text-slate-300">
           {platform.cost > 0 ? `$${platform.cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
         </td>
+        
+        {/* NEW: SIT Column */}
+        <td className="px-4 py-3 text-sm font-mono font-bold text-[#00CED1]">
+          {platformSITs > 0 ? `${platformSITs.toLocaleString()} SIT` : "—"}
+        </td>
+
         <td className="px-4 py-3">
           <span className={`text-sm font-mono ${platform.savings > 0 ? "text-green-400" : "text-slate-500"}`}>
             {platform.savings > 0 ? `$${platform.savings.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
@@ -194,7 +215,7 @@ function PlatformRow({ platform, expanded, onToggle }: { platform: any; expanded
       {/* Expanded detail row */}
       {expanded && (
         <tr className="bg-slate-900/60">
-          <td colSpan={10} className="px-6 py-4">
+          <td colSpan={11} className="px-6 py-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Score Breakdown</p>
@@ -474,6 +495,9 @@ export function AiPlatformComparison({ employees, currentAnnualCost, resultsRead
         </div>
       </div>
 
+      {/* SIT Live Spot Ticker Banner */}
+      <SITSpotTicker initialPrice={SIT_SPOT_PRICE} />
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 border-b border-slate-700/40 bg-slate-800/30">
         <input
@@ -567,6 +591,7 @@ export function AiPlatformComparison({ employees, currentAnnualCost, resultsRead
                 <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Base Price</th>
                 <th className="px-4 py-3"><SortHeader label="Est. Cost / yr" sortKey="cost" current={sortKey} dir={sortDir} onSort={handleSort} /></th>
+                <th className="px-4 py-3 text-xs font-semibold text-[#00CED1] uppercase tracking-wider">Est. Compute (SIT)</th>
                 <th className="px-4 py-3"><SortHeader label="Est. Savings" sortKey="savings" current={sortKey} dir={sortDir} onSort={handleSort} /></th>
                 <th className="px-4 py-3"><SortHeader label="Payback" sortKey="payback" current={sortKey} dir={sortDir} onSort={handleSort} /></th>
                 <th className="px-4 py-3 min-w-[120px]"><SortHeader label="ROI Score" sortKey="roiScore" current={sortKey} dir={sortDir} onSort={handleSort} /></th>
