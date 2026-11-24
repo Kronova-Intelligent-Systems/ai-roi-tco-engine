@@ -14,11 +14,12 @@ COPY Cargo.toml Cargo.lock ./
 # Copy the source code
 COPY src ./src
 
-# Create the directory first to guarantee the path exists
-RUN mkdir -p .sqlx
-# Copy the contents of the local .sqlx directory into the container's .sqlx directory
-COPY .sqlx/ ./.sqlx/
+# Enable offline mode and point the compiler to the visible folder
 ENV SQLX_OFFLINE=true
+ENV SQLX_OFFLINE_DIR=./sqlx_data
+
+# Copy the visible folder into the Docker build context
+COPY sqlx_data ./sqlx_data
 
 # Build the release binary
 RUN cargo build --release
