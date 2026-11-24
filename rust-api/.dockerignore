@@ -1,0 +1,28 @@
+# Rust build artifacts (CRITICAL to ignore)
+target/
+**/*.rs.bk
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Version control
+.git/
+.gitignore
+
+# IDEs and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Frontend artifacts (in case of overlap)
+node_modules/
+dist/
+.next/
+out/
+
+# Explicitly whitelist the sqlx offline cache
+!.sqlx
