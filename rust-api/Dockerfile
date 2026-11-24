@@ -1,40 +1,41 @@
-# Multi-stage build for Rust API
-FROM rust:1.75 AS builder
+# ---------------------------------------------------
+# Stage 1: Build Environment
+# ---------------------------------------------------
+FROM rust:1.75-slim AS builder
 
-WORKDIR /app
+# Install required build dependencies (OpenSSL is required for reqwest/sqlx)
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
-# Copy manifests
+WORKDIR /usr/src/app
+
+# Copy the manifest files
 COPY Cargo.toml Cargo.lock ./
 
-# Build dependencies - this is the caching Docker layer!
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
-RUN rm -rf src
-
-# Copy source code
+# Copy the source code
 COPY src ./src
-COPY migrations ./migrations
 
-# Build application
-RUN touch src/main.rs && cargo build --release
+# If you use sqlx query! macros, copy the prepared offline data 
+# (Run `cargo sqlx prepare` locally before pushing to GitHub)
+COPY .sqlx ./.sqlx
+ENV SQLX_OFFLINE=true
 
-# Runtime stage
+# Build the release binary
+RUN cargo build --release
+
+# ---------------------------------------------------
+# Stage 2: Production Runtime Environment
+# ---------------------------------------------------
 FROM debian:bookworm-slim
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    libssl3 \
-    && rm -rf /var/lib/apt/lists/*
+# Install root certificates so the Rust backend can securely connect 
+# to https://api.kronova.io and the Supabase PostgreSQL pooler
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/target/release/kronova-roi-api /app/
-COPY --from=builder /app/migrations /app/migrations
+# Copy the compiled binary from the builder stage using your exact Cargo.toml package name
+COPY --from=builder /usr/src/app/target/release/kronova-roi-api /app/kronova-roi-api
 
-# Expose port
-EXPOSE 3001
-
+# Railway injects the PORT environment variable dynamically
 # Run the binary
-CMD ["/app/kronova-roi-api"]
+CMD ["./kronova-roi-api"]

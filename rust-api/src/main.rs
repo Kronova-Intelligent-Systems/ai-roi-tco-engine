@@ -128,7 +128,15 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    let addr = format!("{}:{}", config.host, config.port);
+    // =========================================================================
+    // Server Binding (Optimized for Railway)
+    // =========================================================================
+    
+    // Railway strictly requires binding to 0.0.0.0 and injects a dynamic PORT env var.
+    // We fall back to config.port for local development.
+    let port = std::env::var("PORT").unwrap_or_else(|_| config.port.to_string());
+    let addr = format!("0.0.0.0:{}", port);
+    
     info!("Server listening on http://{}", addr);
     info!("rspc endpoint available at http://{}/rspc", addr);
 
