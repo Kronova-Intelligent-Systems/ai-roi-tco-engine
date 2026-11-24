@@ -1,7 +1,7 @@
 # ---------------------------------------------------
 # Stage 1: Build Environment
 # ---------------------------------------------------
-FROM rust:1.75-slim AS builder
+FROM rust:slim-bookworm AS builder
 
 # Install required build dependencies (OpenSSL is required for reqwest/sqlx)
 RUN apt-get update && apt-get install -y pkg-config libssl-dev
