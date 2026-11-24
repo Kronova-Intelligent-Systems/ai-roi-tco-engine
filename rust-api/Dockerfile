@@ -14,9 +14,10 @@ COPY Cargo.toml Cargo.lock ./
 # Copy the source code
 COPY src ./src
 
-# If you use sqlx query! macros, copy the prepared offline data 
-# (Run `cargo sqlx prepare` locally before pushing to GitHub)
-COPY .sqlx ./.sqlx
+# Create the directory first to guarantee the path exists
+RUN mkdir -p .sqlx
+# Copy the contents of the local .sqlx directory into the container's .sqlx directory
+COPY .sqlx/ ./.sqlx/
 ENV SQLX_OFFLINE=true
 
 # Build the release binary
