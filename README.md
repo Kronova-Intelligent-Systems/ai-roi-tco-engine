@@ -1,5 +1,8 @@
 # 🚀 Kronova AI ROI & TCO Calculation Engine
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-roi.kronova.io-00CED1?style=for-the-badge)](https://roi.kronova.io)
+[![App Store](https://img.shields.io/badge/iOS_Premium_App-Coming_Soon-0047AB?style=for-the-badge)](#)
+
 An enterprise-grade, full-stack platform designed to calculate the Total Cost of Ownership (TCO), financial return on investment (ROI), and payback horizons for AI adoption. 
 
 Built with a high-performance **Rust** RPC math engine, a **Next.js** frontend, and a **Supabase (PostgreSQL)** persistence layer, this project provides organizations and engineering leaders with mathematical rigor to evaluate **Build vs. Buy** decisions and benchmark live AI model pricing.
