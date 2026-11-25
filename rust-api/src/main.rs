@@ -91,43 +91,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .layer(cors);
 
-    // =========================================================================
-    // Hourly pricing refresh cron (every hour at :00)
-    // =========================================================================
-    let cron_db = db.clone();
-    let cron_config = config.clone();
-
-    tokio::spawn(async move {
-        match JobScheduler::new().await {
-            Ok(scheduler) => {
-                let job = Job::new_async("0 0 * * * *", move |_uuid, _lock| {
-                    let db = cron_db.clone();
-                    let cfg = cron_config.clone();
-                    Box::pin(async move {
-                        let svc = PlatformPricingService::new(db, cfg);
-                        if let Err(e) = svc.refresh_live_pricing().await {
-                            error!("Pricing refresh cron failed: {}", e);
-                        }
-                    })
-                });
-                match job {
-                    Ok(j) => {
-                        if let Err(e) = scheduler.add(j).await {
-                            error!("Failed to schedule pricing refresh job: {}", e);
-                        }
-                        if let Err(e) = scheduler.start().await {
-                            error!("Failed to start scheduler: {}", e);
-                        } else {
-                            info!("Hourly pricing refresh cron scheduled");
-                        }
-                    }
-                    Err(e) => error!("Failed to create cron job: {}", e),
-                }
-            }
-            Err(e) => error!("Failed to initialise job scheduler: {}", e),
-        }
-    });
-
+    // 
     // =========================================================================
     // Server Binding (Optimized for Railway)
     // =========================================================================
