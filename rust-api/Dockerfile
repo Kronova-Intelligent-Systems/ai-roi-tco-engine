@@ -28,8 +28,9 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 WORKDIR /app
 
-# Copy the compiled binary from the builder stage using your exact Cargo.toml package name
+# Copy both compiled binaries from the builder stage using exact Cargo.toml package name and refresh pricing cron script
 COPY --from=builder /usr/src/app/target/release/kronova-roi-api /app/kronova-roi-api
+COPY --from=builder /usr/src/app/target/release/refresh_pricing /app/refresh_pricing
 
 # Railway injects the PORT environment variable dynamically
 # Run the binary
