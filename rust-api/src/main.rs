@@ -6,18 +6,10 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info, Level};
 
-mod config;
-mod database;
-mod error;
-mod models;
-mod procedures;
-mod services;
-mod utils;
-
-use config::Config;
-use database::DatabasePool;
-use procedures::{mount, Ctx};
-use services::PlatformPricingService;
+// Import directly from library crate
+use kronova_roi_api::config::Config;
+use kronova_roi_api::database::DatabasePool;
+use kronova_roi_api::procedures::{mount, Ctx};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
