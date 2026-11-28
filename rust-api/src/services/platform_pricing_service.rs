@@ -92,6 +92,8 @@ impl PlatformPricingService {
                 "fireworks" | "fireworks ai" => self.fetch_fireworks_pricing(&slug_lower).await,
                 "nebius" => self.fetch_nebius_pricing(&slug_lower).await,
                 "deepseek" => self.fetch_deepseek_pricing(&slug_lower).await,
+
+"xai" => self.fetch_xai_pricing(&slug_lower).await, // Added xAI routing
                 _ => self.fetch_aggregator_fallback(&slug_lower).await,
             };
 
@@ -134,8 +136,10 @@ impl PlatformPricingService {
     // NOTE: Prices returned are specifically formatted as USD per 1 Million Tokens
     // ============================================================================
 
-    async fn fetch_openai_pricing(&self, slug: &str) -> Result<PricingData, RpcError> {
+async fn fetch_openai_pricing(&self, slug: &str) -> Result<PricingData, RpcError> {
         let (input, output) = match slug {
+            s if s.contains("gpt-4.1") => (2.0, 8.0), // Added GPT-4.1 from v0 specs
+            s if s.contains("text-embedding-3-small") => (0.02, 0.0), // Input-only embeddings
             s if s.contains("gpt-4o-mini") => (0.15, 0.60),
             s if s.contains("gpt-4o") => (5.0, 15.0),
             s if s.contains("o1-preview") => (15.0, 60.0),
@@ -147,6 +151,8 @@ impl PlatformPricingService {
 
     async fn fetch_anthropic_pricing(&self, slug: &str) -> Result<PricingData, RpcError> {
         let (input, output) = match slug {
+            s if s.contains("sonnet-5-5") => (4.0, 4.0), // Flat blend matching v0 ($0.004 per 1k)
+            s if s.contains("haiku-5-5") => (0.2, 0.2),  // Flat blend matching v0 ($0.0002 per 1k)
             s if s.contains("sonnet") => (3.0, 15.0),
             s if s.contains("opus") => (15.0, 75.0),
             s if s.contains("haiku") => (0.25, 1.25),
@@ -157,11 +163,22 @@ impl PlatformPricingService {
 
     async fn fetch_google_pricing(&self, slug: &str) -> Result<PricingData, RpcError> {
         let (input, output) = match slug {
+            s if s.contains("gemini-3.5-flash") => (3.375, 3.375), // Flat blend matching v0 ($0.003375 per 1k)
+            s if s.contains("gemini-3.6-flash") => (1.5, 1.5),     // Flat blend matching v0 ($0.001500 per 1k)
             s if s.contains("pro") => (3.5, 10.5),
             s if s.contains("flash") => (0.075, 0.3),
             _ => (3.5, 10.5),
         };
         Ok(PricingData { input_price_1m: input, output_price_1m: output, monthly_flat_rate: Some(20.0) })
+    }
+
+    async fn fetch_xai_pricing(&self, slug: &str) -> Result<PricingData, RpcError> {
+        let (input, output) = match slug {
+            s if s.contains("grok-4.20") => (1.563, 1.563), // Flat blend matching v0 ($0.001563 per 1k)
+            s if s.contains("grok-4-fast") => (2.0, 2.0),   // Flat blend matching v0 ($0.002 per 1k)
+            _ => (1.5, 1.5),
+        };
+        Ok(PricingData { input_price_1m: input, output_price_1m: output, monthly_flat_rate: None })
     }
 
     async fn fetch_groq_pricing(&self, _slug: &str) -> Result<PricingData, RpcError> {
